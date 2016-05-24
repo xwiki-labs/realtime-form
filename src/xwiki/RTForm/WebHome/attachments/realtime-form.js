@@ -72,7 +72,9 @@ define([
         var saverConfig = editorConfig.saverConfig || {};
         saverConfig.chainpad = Chainpad;
         saverConfig.editorType = 'rtform';
-        saverConfig.language = language;
+        saverConfig.editorName = 'Form';
+        saverConfig.isHTML = false;
+        saverConfig.mergeContent = false;
         var Messages = saverConfig.messages || {};
 
         /** Key in the localStore which indicates realtime activity should be disallowed. */
@@ -339,23 +341,29 @@ define([
                 };
                 toolbar = Toolbar.create($bar, info.myID, info.realtime, info.getLag, info.userList, config, toolbar_style);
 
-                // TODO Create the saver/merger
-                /*if(!DEMO_MODE) {
+                /*
+                if(!DEMO_MODE) {
                     // this function displays a message notifying users that there was a merge
                     Saver.lastSaved.mergeMessage = Interface.createMergeMessageElement(toolbar.toolbar
                         .find('.rt-toolbar-rightside'),
                         saverConfig.messages);
                     Saver.setLastSavedContent($textArea.val());
-                    var textConfig = {
+                    var saverCreateConfig = {
                       formId: "edit", // Id of the wiki page form
-                      setTextValue: function(newText, callback) {
-                          $textArea.val(newText);
+                      setTextValue: function(newText, toConvert, callback) {
+                          setValueWithCursor(newText);
                           callback();
+                          onLocal();
                       },
                       getTextValue: function() { return $textArea.val(); },
-                      messages: saverConfig.messages
+                      realtime: info.realtime,
+                      userList: info.userList,
+                      userName: userName,
+                      network: info.network,
+                      channel: eventsChannel,
+                      demoMode: DEMO_MODE
                     }
-                    Saver.create(info.network, eventsChannel, info.realtime, textConfig, DEMO_MODE);
+                    Saver.create(saverCreateConfig);
                 }*/
             };
 
@@ -412,6 +420,7 @@ define([
                 var type = ui.type;
                 var events = eventsByType[type];
                 ui.$.on(events, function() {
+                    Saver.destroyDialog();
                     Saver.setLocalEditFlag(true);
                     onLocal();
                 });
