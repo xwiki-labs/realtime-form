@@ -48,7 +48,7 @@ define([
 
     var eventsByType = Formula.eventsByType;
 
-    var Map = module.Map = {};
+    var Map = window.myMap = module.Map = {};
 
     var UI = module.UI = {
         ids: [],
@@ -90,6 +90,7 @@ define([
             inline = true;
             $contentInner = $('#inline');
         }
+        var formId = inline ? 'inline' : 'update';
         var $elements = module.elements = $contentInner.find('input, select, textarea');
 
         // Change the inner to set the position of the toolbar
@@ -98,10 +99,14 @@ define([
         $elements.each(function (index, element) {
             var $this = $(this);
 
-            var id = $this.attr('name');
+            var id = $this.attr('id');
+            if (!id) { return; }
             var type = getInputType($this);
 
-            if (type === 'hidden') { return; };
+            // ignore hidden inouts, submit inputs, and buttons
+            if (['button', 'submit', 'hidden'].indexOf(type) !== -1) {
+                return;
+            };
 
             $this   // give each element a uid
                 .data('rtform-uid', id)
@@ -341,21 +346,24 @@ define([
                 };
                 toolbar = Toolbar.create($bar, info.myID, info.realtime, info.getLag, info.userList, config, toolbar_style);
 
-                /*
                 if(!DEMO_MODE) {
                     // this function displays a message notifying users that there was a merge
                     Saver.lastSaved.mergeMessage = Interface.createMergeMessageElement(toolbar.toolbar
                         .find('.rt-toolbar-rightside'),
                         saverConfig.messages);
-                    Saver.setLastSavedContent($textArea.val());
+                    Saver.setLastSavedContent(JSON.stringify(Map));
                     var saverCreateConfig = {
-                      formId: "edit", // Id of the wiki page form
-                      setTextValue: function(newText, toConvert, callback) {
-                          setValueWithCursor(newText);
-                          callback();
-                          onLocal();
+                      formId: formId, // Id of the wiki page form
+                      // setTextValue is nerver used when the merge is disabled
+                      setTextValue: function() {},
+                      getSaveValue: function() {
+                          console.log($('#'+formId).serialize());
+                          return $('#'+formId).serialize();
                       },
-                      getTextValue: function() { return $textArea.val(); },
+                      getTextValue: function() {
+                          //console.log('text : '+JSON.stringify(Map));
+                          return JSON.stringify(Map);
+                      },
                       realtime: info.realtime,
                       userList: info.userList,
                       userName: userName,
@@ -364,7 +372,7 @@ define([
                       demoMode: DEMO_MODE
                     }
                     Saver.create(saverCreateConfig);
-                }*/
+                }
             };
 
             var onLocal = realtimeOptions.onLocal = function () {

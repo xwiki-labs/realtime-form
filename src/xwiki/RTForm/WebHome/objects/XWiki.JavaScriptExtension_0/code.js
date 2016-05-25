@@ -137,7 +137,7 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
             $(button).on('click', function() {
                 window.location.href = Loader.getEditorURL(window.location.href, info);
             });
-        } else if(lock && wikiLock) {
+        } else if(lock && formLock) {
             var button = new Element('button', {'class': 'btn btn-primary'});
             var br =  new Element('br');
             button.insert(Loader.messages.redirectDialog_create.replace(/\{0\}/g, "Form"));
