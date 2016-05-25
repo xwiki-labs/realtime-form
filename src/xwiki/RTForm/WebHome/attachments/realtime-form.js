@@ -325,6 +325,34 @@ define([
                 });
             };
 
+            var createSaver = function (info) {
+                if(!DEMO_MODE) {
+                    // this function displays a message notifying users that there was a merge
+                    Saver.lastSaved.mergeMessage = Interface.createMergeMessageElement(toolbar.toolbar
+                        .find('.rt-toolbar-rightside'),
+                        saverConfig.messages);
+                    Saver.setLastSavedContent(JSON.stringify(Map));
+                    var saverCreateConfig = {
+                      formId: formId, // Id of the wiki page form
+                      // setTextValue is nerver used when the merge is disabled
+                      setTextValue: function() {},
+                      getSaveValue: function() {
+                          return $('#'+formId).serialize();
+                      },
+                      getTextValue: function() {
+                          return JSON.stringify(Map);
+                      },
+                      realtime: info.realtime,
+                      userList: info.userList,
+                      userName: userName,
+                      network: info.network,
+                      channel: eventsChannel,
+                      demoMode: DEMO_MODE
+                    }
+                    Saver.create(saverCreateConfig);
+                }
+            };
+
             var onRemote = realtimeOptions.onRemote = function (info) {
                 if (initializing) { return; }
 
@@ -345,34 +373,6 @@ define([
                     // changeNameID: 'cryptpad-changeName'
                 };
                 toolbar = Toolbar.create($bar, info.myID, info.realtime, info.getLag, info.userList, config, toolbar_style);
-
-                if(!DEMO_MODE) {
-                    // this function displays a message notifying users that there was a merge
-                    Saver.lastSaved.mergeMessage = Interface.createMergeMessageElement(toolbar.toolbar
-                        .find('.rt-toolbar-rightside'),
-                        saverConfig.messages);
-                    Saver.setLastSavedContent(JSON.stringify(Map));
-                    var saverCreateConfig = {
-                      formId: formId, // Id of the wiki page form
-                      // setTextValue is nerver used when the merge is disabled
-                      setTextValue: function() {},
-                      getSaveValue: function() {
-                          console.log($('#'+formId).serialize());
-                          return $('#'+formId).serialize();
-                      },
-                      getTextValue: function() {
-                          //console.log('text : '+JSON.stringify(Map));
-                          return JSON.stringify(Map);
-                      },
-                      realtime: info.realtime,
-                      userList: info.userList,
-                      userName: userName,
-                      network: info.network,
-                      channel: eventsChannel,
-                      demoMode: DEMO_MODE
-                    }
-                    Saver.create(saverCreateConfig);
-                }
             };
 
             var onLocal = realtimeOptions.onLocal = function () {
@@ -406,6 +406,7 @@ define([
                 initializing = false;
 
                 onLocal();
+                createSaver(info);
             };
 
             var onAbort = realtimeOptions.onAbort = function (info) {
@@ -421,6 +422,7 @@ define([
             module.abortRealtime = function () {
                 module.realtime.abort();
                 module.leaveChannel();
+                Saver.stop();
                 onAbort();
             };
 
