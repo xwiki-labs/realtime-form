@@ -11,12 +11,14 @@ define([], function () {
 
     ula.eventsByType = {
         text: 'change keyup',
+        hidden: 'change',
         password: 'change keyup',
         radio: 'change click',
         checkbox: 'change click',
         number: 'change',
         range: 'keyup change',
         'select-one': 'change',
+        'select-multiple': 'change',
         textarea: 'change keyup',
     };
 

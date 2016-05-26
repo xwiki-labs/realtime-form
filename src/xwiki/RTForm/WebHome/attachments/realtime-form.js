@@ -34,7 +34,7 @@ define([
         return JSONSortify(obj);
     };
 
-    var canonicalize = function(text) { return text.replace(/\r\n/g, '\n'); };
+    var canonicalize = function(text) { if(typeof text !== "string") {return;} return text.replace(/\r\n/g, '\n'); };
 
     window.Toolbar = Toolbar;
 
@@ -50,12 +50,34 @@ define([
 
     var Map = window.myMap = module.Map = {};
 
-    var UI = module.UI = {
+    var UI = window.UI = module.UI = {
         ids: [],
         each: function (f) {
             UI.ids.forEach(function (id, i, list) {
                 f(UI[id], i, list);
             });
+        },
+        add: function (id, ui) {
+            if (UI.ids.indexOf(id) === -1) {
+                UI.ids.push(id);
+
+                UI[id] = ui;
+                return true;
+            } else {
+                // it already exists
+
+                return false;
+            }
+        },
+        remove: function (id) {
+            if (UI[id]) {
+                delete UI[id];
+            }
+            var idx = UI.ids.indexOf(id);
+            if (idx > -1) {
+                UI.ids.splice(idx, 1);
+                return true;
+            }
         }
     };
 
@@ -85,7 +107,7 @@ define([
 
         var inline = false;
         // Set the inner to get the realtimed fields
-        var $contentInner = $('#update'); // Object editor
+        var $contentInner = $('#xwikiobjects'); // Object editor
         if (!$contentInner.length) {
             inline = true;
             $contentInner = $('#inline');
@@ -96,15 +118,22 @@ define([
         // Change the inner to set the position of the toolbar
         if (inline) { $contentInner = $('#inline .xform'); }
 
-        $elements.each(function (index, element) {
-            var $this = $(this);
+        var addElement = function (index, element) {
+            var $this = $(element);
 
             var id = $this.attr('id');
-            if (!id) { return; }
+            var name = $this.attr('name');
+            if (!id) {
+                var index = 0;
+                while (document.getElementById(name+'-'+index) && index < 1000) { index++; }
+                id = name+'-'+index;
+                $this.attr('id', id);
+            }
+            if (!name) { return; }
             var type = getInputType($this);
 
             // ignore hidden inouts, submit inputs, and buttons
-            if (['button', 'submit', 'hidden'].indexOf(type) !== -1) {
+            if (['button', 'submit'].indexOf(type) !== -1) {
                 return;
             };
 
@@ -137,13 +166,85 @@ define([
                     return function (content) {
                         return typeof content !== 'undefined' ?
                             $this.val(content):
-                            canonicalize($this.val());
+                            typeof $this.val() === "string" ? canonicalize($this.val()) : $this.val();
                     };
                 }
             }());
 
             var update = component.update = function () { Map[id] = component.value(); };
             update();
+        };
+        $elements.each(addElement);
+
+        // Check if a value is in the Map associated with the given property
+        // 1/ Filter the Map to get only the values of our property. We want only the keys of the Map which are "{propertyName}-{Integer}".
+        // 2/ Use Array.some to check if the value of our $input is in the filtered Map
+        var isValueInMap = function(value, name, callback) {
+            var patt = /\-\d+$/;
+            return Object.keys(Map).filter(m => {
+                if (!patt.test(m)) { return false; }
+                else { return m.replace(patt, '') === name; }
+            }).some(function (key) {
+                if (value === Map[key]) {
+                    callback(key);
+                    return true;
+                }
+            });
+        }
+
+        // Register the auto-suggest elements added to the page
+        $(document).on('DOMNodeInserted' , function(e) {
+            var $target = $(e.target);
+            if ($target.is('li') && $target.find('input[type="hidden"]').length) {
+                var $input = $target.find('input[type="hidden"]');
+                var name = $input.attr('name');
+
+                // We want to check if the auto-suggest value is already in the Map.
+                // If it is in the Map, it means that it has been added by someone else and we have to 
+		// use the same ID. If it is not in the Map, we have to generate an ID.
+                var existingKey;
+                var isInMap = isValueInMap($input.val(), name, key => {existingKey = key;});
+                if (isInMap) { // The value is in the Map, with the id "existingKey"
+                    $input.attr('id', existingKey);
+                }
+                else { // Not in the Map, generate an ID
+                    var index = $('[name="'+name+'"]').length-1;
+                    var existingIds = Object.keys(Map);
+                    while (existingIds.indexOf(name+'-'+index) !== -1 && index < 1000) { index++; }
+                    var id = name+'-'+index;
+                    $input.attr('id', id);
+                }
+
+                //if (UI[id]) { $target.remove(); return; } WTF??
+
+                // Add the element in the UI object
+                addElement(null, $input);
+
+                if(!isInMap) { // Add it to the Map!
+                    module.changeEventListener && UI[id] && module.changeEventListener(UI[id]);
+                    Saver.setLocalEditFlag(true);
+                    module.onLocal();
+                }
+            }
+        });
+        $(document).on('DOMNodeRemoved' , function(e) {
+            var $target = $(e.target);
+            var $elements = $target.find('input, textarea, select');
+            var removed = false;
+            $elements.each(function (index, element) {
+                var id = $(element).attr('id');
+                if (UI[id]) {
+
+                    delete UI[id];
+                    delete Map[id];
+                    var idx = UI.ids.indexOf(id);
+                    if (idx > -1) {
+                        UI.ids.splice(idx, 1);
+                    }
+                    removed = true;
+                }
+            });
+            if (removed) { Saver.setLocalEditFlag(true); module.onLocal(); }
         });
 
         // TOOLBAR style
@@ -248,7 +349,7 @@ define([
 
             var realtimeOptions = {
                 // provide initialstate...
-                initialState: stringifyMap(Map) || '{}',
+                initialState: '{}',
 
                 // the websocket URL
                 websocketURL: WebsocketURL,
@@ -277,31 +378,59 @@ define([
                   addToUserList(userData);
                 }
                 return hjson;
-            }
+            };
 
             // Form read/update
-            var readValues = function () {
+            var readValues = window.readValues = function () {
                 UI.each(function (ui, i, list) {
                     Map[ui.id] = ui.value();
                 });
             };
-            var updateValues = function () {
+            var preventLocal = false;
+            var updateValues = function (firstLoad) {
                 var userDoc = module.realtime.getUserDoc();
                 var parsed = JSON.parse(userDoc);
 
                 var content = parsed.content || {};
+                preventLocal = true;
 
-                // Update our Map with the latest values of fields.
-                // This allows communication between "inline" and "object" editor which don't have the same fields.
-                Object.keys(content).forEach(function(key) {
-                    if (UI.ids.indexOf(key) === -1) { Map[key] = content[key]; }
-                });
+                // Remove all the autosuggest values and replace them with the remote ones if they exist if the remote document
+                if (Object.keys(content).length > 0) {
+                    var idsUI = UI.ids.slice(0);
+                    idsUI.forEach(function (id) {
+                        var patt = /\-\d+$/;
+                        var ui = UI[id];
+                        if (!ui) { return; }
+                        var name = ui.name;
+                        var isSuggest = patt.test(id) && id.replace(patt, '') === name
+                                        && ui.$.is('input[type="hidden"]')
+                                        && ui.$.parents('li').length;
+                        if (isSuggest && typeof content[name] !== "undefined") {
+                            if (content[id] && content[id] === ui.value()) { return; }
+                            ui.$.parents('li').remove();
+                            delete Map[id];
+                            UI.remove(id);
+                        }
+                    });
+                }
 
                 UI.each(function (ui, i, list) {
                     var newval = content[ui.id];
                     var oldval = ui.value();
 
-                    if (typeof newval === "undefined") { return; } // The remote document doesn't know that field yet
+                    // The remote document doesn't know that field yet OR the field is a removed autosuggest value
+                    if (typeof newval === "undefined" && Object.keys(content).length > 0) {
+                        var isAutoSuggest = ui.id.lastIndexOf('-') !== -1
+                                        && ui.id.substr(0,ui.id.lastIndexOf('-')+1) === ui.name+'-'
+                                        && ui.$.is('input[type="hidden"]');
+                        if (isAutoSuggest) { // Remove it
+                            ui.$.parents('li').remove();
+                        }
+                        return;
+                    }
+                    if (typeof newval === "undefined") {
+                        return;
+                    }
                     if (newval === oldval) { return; }
 
                     var op;
@@ -323,6 +452,23 @@ define([
                         element.selectionEnd = selects[1];
                     }
                 });
+
+                // Replace the suggest values with the remote ones if they exist if the remote document
+                if (Object.keys(content).length > 0) {
+                    Object.keys(content).forEach(function(key) {
+                        Map[key] = content[key];
+                        var patt = /\-\d+$/;
+                        if (!patt.test(key)) { return; }
+                        var name = key.replace(patt, '');
+                        if (UI.ids.indexOf(name) === -1) { return; }
+                        if (UI[key] && UI[key].value() === content[key]) { return;}
+                        var instance = XWiki.widgets.UserPicker.instances[name];
+                        if (!instance) { return; }
+                        $('input[type!="hidden"][name="'+name+'"]').val(content[key]);
+                        instance._selectionManager.initializeSelection();
+                    });
+                }
+                preventLocal = false;
             };
 
             var createSaver = function (info) {
@@ -360,7 +506,9 @@ define([
                 updateUserList(sjson);
 
                 /* integrate remote changes */
-                updateValues();
+                if (stringifyMap(Map) !== module.realtime.getUserDoc()) {
+                    updateValues();
+                }
             };
 
             var onInit = realtimeOptions.onInit = function (info) {
@@ -375,12 +523,12 @@ define([
                 toolbar = Toolbar.create($bar, info.myID, info.realtime, info.getLag, info.userList, config, toolbar_style);
             };
 
-            var onLocal = realtimeOptions.onLocal = function () {
+            var onLocal = realtimeOptions.onLocal = module.onLocal = function () {
                 if (initializing) { return; }
                 /* serialize local changes */
                 readValues();
-
                 var sjson = stringifyMap(Map);
+                if (sjson === module.realtime.getUserDoc()) { return; }
                 module.patchText(sjson);
 
                 if (module.realtime.getUserDoc() !== sjson) {
@@ -399,7 +547,7 @@ define([
                 var userDoc = module.realtime.getUserDoc();
                 updateUserList(userDoc);
 
-                updateValues();
+                updateValues(true);
 
                 console.log("Unlocking editor");
                 setEditable(true);
@@ -426,15 +574,18 @@ define([
                 onAbort();
             };
 
-            UI.each(function (ui, i, list) {
+            var changeEventListener = module.changeEventListener = function (ui, i, list) {
                 var type = ui.type;
                 var events = eventsByType[type];
                 ui.$.on(events, function() {
                     Saver.destroyDialog();
                     Saver.setLocalEditFlag(true);
-                    onLocal();
+                    if (!preventLocal) {
+                        onLocal();
+                    }
                 });
-            });
+            };
+            UI.each(changeEventListener);
         };
 
         whenReady();

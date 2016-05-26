@@ -103,6 +103,10 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
         Loader.checkSessions(info);
     } else if (isRTForm() || DEMO_MODE) {
         var config = Loader.getConfig();
+        if(config.language !== "default" && !DEMO_MODE) {
+            console.log("Realtime Form is only available for the default language of the document.");
+            return;
+        }
         var keysData = getKeyData(config);
         // No lock and we are using wiki editor : start realtime
         Loader.getKeys(keysData, function(keysResultDoc) {
