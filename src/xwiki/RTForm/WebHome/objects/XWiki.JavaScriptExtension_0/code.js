@@ -98,13 +98,44 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
         return keys;
     };
 
+    var displayTranslatedPageModal = function() {
+        var behave = {
+            onYes: () => {
+                var href = window.location.href;
+                href = href.replace(/\?(.*)$/, function (all, args) {
+                    return '?' + args.split('&').filter(function (arg) {
+                        var type = arg.split('=')[0];
+                        if (type === 'language') { return false; }
+                        else { return true; }
+                    }).join('&');
+                });
+
+                if(href.indexOf('?') === -1) { href += '?'; }
+                href += "&language=default";
+
+                window.location.href = href;
+             },
+            onNo: () => {}
+        };
+
+        var param = {
+            confirmationText: "You are editing a form from a translated page. If you want to use a realtime session of that form, you have to edit using the default language. Do you want to switch to realtime?",
+            yesButtonText: "Go to the realtime session",
+            noButtonText: "Continue to edit the translated page offline",
+            showCancelButton: false
+        };
+
+        new XWiki.widgets.ConfirmationBox(behave, param);
+    };
+
     if (lock) {
         // found a lock link : check active sessions
         Loader.checkSessions(info);
     } else if (isRTForm() || DEMO_MODE) {
         var config = Loader.getConfig();
         if(config.language !== "default" && !DEMO_MODE) {
-            console.log("Realtime Form is only available for the default language of the document.");
+            console.log("Realtime Form is only available for the default language of the document!");
+            displayTranslatedPageModal();
             return;
         }
         var keysData = getKeyData(config);
@@ -130,6 +161,7 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
             }
         });
     }
+
 
     var displayButtonModal = function() {
         if ($('.realtime-button-rtform').length) {
