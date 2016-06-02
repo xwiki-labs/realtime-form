@@ -113,7 +113,9 @@ define([
             $contentInner = $('#inline');
         }
         var formId = inline ? 'inline' : 'update';
-        var $elements = module.elements = $contentInner.find('input, select, textarea');
+        var $elements = module.elements = $contentInner.find('input, select, textarea').filter(function (index) {
+            return $(this).attr('name') !== "form_token";
+        });
 
         // Change the inner to set the position of the toolbar
         if (inline) { $contentInner = $('#inline .xform'); }
