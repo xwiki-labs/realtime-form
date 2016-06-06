@@ -100,7 +100,7 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
 
     var displayTranslatedPageModal = function() {
         var behave = {
-            onYes: () => {
+            onYes: function () {
                 var href = window.location.href;
                 href = href.replace(/\?(.*)$/, function (all, args) {
                     return '?' + args.split('&').filter(function (arg) {
@@ -115,7 +115,7 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
 
                 window.location.href = href;
              },
-            onNo: () => {}
+            onNo: function () {}
         };
 
         var param = {
