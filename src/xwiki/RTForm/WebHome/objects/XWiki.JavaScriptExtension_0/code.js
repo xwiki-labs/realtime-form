@@ -49,6 +49,7 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
         if (elmt === 'editor=inline') { editor = 'inline'; return false; }
         if (elmt === 'sheet=CKEditor.EditSheet') { ckEditor = true; return false; }
     });
+    if (window.XWiki.editor === 'inline') { editor = 'inline'; }
 
     var isRTForm = function() {
         if (ckEditor) { return false; }
@@ -166,22 +167,45 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
     var displayButtonModal = function() {
         if ($('.realtime-button-rtform').length) {
             var button = new Element('button', {'class': 'btn btn-success'});
+            var button2 = new Element('button', {'class': 'btn btn-success'});
             var br =  new Element('br');
-            button.insert(Loader.messages.redirectDialog_join.replace(/\{0\}/g, "Form"));
+            button.insert(Loader.messages.redirectDialog_join.replace(/\{0\}/g, "Form (object)"));
+            button2.insert(Loader.messages.redirectDialog_join.replace(/\{0\}/g, "Form (inline)"));
             $('.realtime-button-rtform').prepend(button);
             $('.realtime-button-rtform').prepend(br);
+            $('.realtime-button-rtform').prepend(button2);
+            $('.realtime-button-rtform').prepend(br);
             $(button).on('click', function() {
+                info.href = '&editor=object&force=1';
                 window.location.href = Loader.getEditorURL(window.location.href, info);
             });
+            $(button2).on('click', function() {
+                info.href = '&editor=inline&force=1';
+                window.location.href = Loader.getEditorURL(window.location.href, info);
+            });
+
         } else if(lock && formLock) {
             var button = new Element('button', {'class': 'btn btn-primary'});
+            var button2 = new Element('button', {'class': 'btn btn-primary'});
+
             var br =  new Element('br');
-            button.insert(Loader.messages.redirectDialog_create.replace(/\{0\}/g, "Form"));
+            button.insert(Loader.messages.redirectDialog_create.replace(/\{0\}/g, "Form (object)"));
+            button2.insert(Loader.messages.redirectDialog_create.replace(/\{0\}/g, "Form (inline)"));
+
+            $('.realtime-buttons').append(br);
+            $('.realtime-buttons').append(button2);
             $('.realtime-buttons').append(br);
             $('.realtime-buttons').append(button);
+
             $(button).on('click', function() {
+                info.href = '&force=1&editor=object';
                 window.location.href = Loader.getEditorURL(window.location.href, info);
             });
+            $(button).on('click', function() {
+                info.href = '&force=1&editor=inline';
+                window.location.href = Loader.getEditorURL(window.location.href, info);
+            });
+
         }
     };
     displayButtonModal();
