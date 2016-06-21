@@ -2,7 +2,7 @@
 var DEMO_MODE = "$!request.getParameter('demoMode')" || false;
 DEMO_MODE = (DEMO_MODE === true || DEMO_MODE === "true") ? true : false;
 // Not in edit mode?
-if (!DEMO_MODE && window.XWiki.contextaction !== 'edit') { return false; }
+if (!DEMO_MODE && window.XWiki.contextaction !== 'edit' && 1==2) { return false; }
 var path = "$xwiki.getURL('RTFrontend.LoadEditors','jsx')" + '?minify=false&demoMode='+DEMO_MODE;
 var pathErrorBox = "$xwiki.getURL('RTFrontend.ErrorBox','jsx')" + '?';
 require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
@@ -18,6 +18,9 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
     for (var path in PATHS) { PATHS[path] = PATHS[path].replace(/\.js$/, ''); }
     require.config({paths:PATHS});
 
+    console.log('$xcontext.doc');
+    // $response
+    // $request.
 
     var launchRealtime = function (config, keys) {
         require(['RTForm_WebHome_realtime_netflux'], function (RTForm) {
@@ -57,7 +60,29 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
         // Disallow RTForm in AWM wizard (editor inline)
         var wizardHeader = document.getElementsByClassName('wizard-header');
         return (wizardHeader.length === 0);
-    }
+    };
+
+    var isRtFormAllowed = function() {
+        var allowedGlobally = ("$!document.getObject("RTForm.ConfigurationClass").getProperty("enableGlobally").value" === "1");
+        var allowedBySheet = ("$!request.getParameter('enableRtForm')" === "1");
+        if (allowedGlobally || allowedBySheet) { return true; }
+
+        var allowedClasses = []; //TODO: velocity here
+        #set ($enabledClasses = $document.getObject("RTForm.ConfigurationClass").getProperty("enabledClasses").value)
+        #foreach ($className in $enabledClasses) allowedClasses.push('$escapetool.javascript($className)'); #end
+        console.log(allowedClasses);
+        var objectsInThePage = JSON.parse($('#realtime-form-getobjects').html()); //TODO: velocity here. Select ONLY objects with a sheet!
+        console.log(objectsInThePage);
+        var allowed = true;
+        objectsInThePage.forEach(function(obj) {
+            if (allowedClasses.indexOf(obj) === -1) {
+                allowed = false;
+                return;
+            }
+        });
+        return allowed;        
+    };
+    console.log(isRtFormAllowed());
 
     var info = {
         type: 'rtform',
@@ -132,7 +157,7 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
     if (lock) {
         // found a lock link : check active sessions
         Loader.checkSessions(info);
-    } else if (isRTForm() || DEMO_MODE) {
+    } else if ((isRTForm() && isRtFormAllowed()) || DEMO_MODE) {
         var config = Loader.getConfig();
         if(config.language !== "default" && !DEMO_MODE) {
             console.log("Realtime Form is only available for the default language of the document!");

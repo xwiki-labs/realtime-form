@@ -1,0 +1,14 @@
+XWikiObj(function (obj) {
+    obj.setCategoryIcon("");
+    obj.setCodeToExecute("");
+    obj.setConfigurationClass("RTForm.ConfigurationClass");
+    obj.setConfigureGlobally("1");
+    obj.setDisplayBeforeCategory("");
+    obj.setDisplayInCategory("");
+    obj.setDisplayInSection("Realtime Editors");
+    obj.setHeading("Forms");
+    obj.setIconAttachment("");
+    obj.setLinkPrefix("");
+    obj.setPropertiesToShow("");
+    obj.setSectionOrder("");
+});
