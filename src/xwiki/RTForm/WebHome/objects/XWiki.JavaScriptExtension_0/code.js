@@ -18,10 +18,6 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
     for (var path in PATHS) { PATHS[path] = PATHS[path].replace(/\.js$/, ''); }
     require.config({paths:PATHS});
 
-    console.log('$xcontext.doc');
-    // $response
-    // $request.
-
     var launchRealtime = function (config, keys) {
         require(['RTForm_WebHome_realtime_netflux'], function (RTForm) {
             if (RTForm && RTForm.main) {
@@ -62,27 +58,27 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
         return (wizardHeader.length === 0);
     };
 
+    // Check if RTForm is allowed globally in the admin UI or only allowed for specific classes.
+    // It is also possible that a sheet requests that RTForm is enabled for the related class.
     var isRtFormAllowed = function() {
         var allowedGlobally = ("$!document.getObject("RTForm.ConfigurationClass").getProperty("enableGlobally").value" === "1");
         var allowedBySheet = ("$!request.getParameter('enableRtForm')" === "1");
         if (allowedGlobally || allowedBySheet) { return true; }
 
-        var allowedClasses = []; //TODO: velocity here
+        var allowedClasses = [];
         #set ($enabledClasses = $document.getObject("RTForm.ConfigurationClass").getProperty("enabledClasses").value)
         #foreach ($className in $enabledClasses) allowedClasses.push('$escapetool.javascript($className)'); #end
-        console.log(allowedClasses);
-        var objectsInThePage = JSON.parse($('#realtime-form-getobjects').html()); //TODO: velocity here. Select ONLY objects with a sheet!
-        console.log(objectsInThePage);
-        var allowed = true;
-        objectsInThePage.forEach(function(obj) {
-            if (allowedClasses.indexOf(obj) === -1) {
-                allowed = false;
+
+        var objectsInThePage = JSON.parse($('#realtime-form-getobjects').html());
+        var allowed = false;
+        objectsInThePage.forEach(function (obj) {
+            if (allowedClasses.indexOf(obj) !== -1) {
+                allowed = true;
                 return;
             }
         });
-        return allowed;        
+        return allowed;
     };
-    console.log(isRtFormAllowed());
 
     var info = {
         type: 'rtform',
