@@ -256,18 +256,25 @@ define([
             '.' + TOOLBAR_CLS + ' {',
             '    width: 100%;',
             '    color: #666;',
-            '    font-weight: bold;',
-            '    background-color: #f0f0ee;',
+            '    /*font-weight: bold;*/',
+            '    /*background-color: #f0f0ee;*/',
             '    border: 0, none;',
-            '    height: 24px;',
-            '    float: left;',
+            '    /*height: 24px;*/',
+            '    /*float: left;*/',
+            '    position: relative;',
             '}',
             '.' + TOOLBAR_CLS + ' div {',
             '    padding: 0 10px 0 5px;',
-            '    height: 1.5em;',
-            '    background: #f0f0ee;',
-            '    line-height: 25px;',
-            '    height: 24px;',
+            '    /*height: 1.5em;*/',
+            '    /*background: #f0f0ee;*/',
+            '    /*line-height: 25px;*/',
+            '    /*height: 24px;*/',
+            '    display: inline-block;',
+            '    float: none',
+            '}',
+            '.rt-toolbar-rightside {',
+            '    position: absolute;',
+            '    right: 0px;',
             '}',
             '</style>'
         ];
@@ -523,6 +530,7 @@ define([
                     // changeNameID: 'cryptpad-changeName'
                 };
                 toolbar = Toolbar.create($bar, info.myID, info.realtime, info.getLag, info.userList, config, toolbar_style);
+                $(toolbar.toolbar).addClass('breadcrumb');
             };
 
             var onLocal = realtimeOptions.onLocal = module.onLocal = function () {
