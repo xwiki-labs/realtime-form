@@ -318,6 +318,10 @@ define([
 
         var whenReady = function () {
 
+            UI.each(function (el) {
+                el.$.addClass('realtime-form-field');
+            });
+
             var setEditable = module.setEditable = function (bool) {
                 /* (dis)allow editing */
                 $elements.each(function () {
@@ -572,7 +576,9 @@ define([
                 // TODO inform them that the session was torn down
                 toolbar.failed();
                 toolbar.toolbar.remove();
-                ErrorBox.show('disconnected');
+                if (Interface.realtimeAllowed()) {
+                    ErrorBox.show('disconnected');
+                }
             };
 
             var rti = module.realtimeInput = realtimeInput.start(realtimeOptions);
@@ -580,6 +586,7 @@ define([
             module.abortRealtime = function () {
                 module.realtime.abort();
                 module.leaveChannel();
+                $elements.removeClass('realtime-form-field');
                 Saver.stop();
                 onAbort();
             };
