@@ -139,6 +139,9 @@ define([
                 return;
             };
 
+            // Exclude the WYSIWYG editor
+            if (type === "textarea" && $(this).css('visibility') === "hidden") { return; }
+
             $this   // give each element a uid
                 .data('rtform-uid', id)
                     // get its type
@@ -324,8 +327,8 @@ define([
 
             var setEditable = module.setEditable = function (bool) {
                 /* (dis)allow editing */
-                $elements.each(function () {
-                    $(this).attr('disabled', !bool);
+                UI.each(function (el) {
+                    el.$.attr('disabled', !bool);
                 });
             };
             setEditable(false);
