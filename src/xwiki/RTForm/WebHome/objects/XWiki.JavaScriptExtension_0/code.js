@@ -40,7 +40,8 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
     var lock = Loader.getDocLock();
     var formLock = !getWysiwygLock() && getFormLock();
 
-    var editor = 'object';
+    //var editor = 'object'; //FIXME object editor disabled because of a wrong behavior when an object is added
+    var editor = 'inline';
     var href = document.location.href;
     var params = href.substr(href.indexOf('?')+1);
     var ckEditor = false;
@@ -52,7 +53,8 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
 
     var isRTForm = function() {
         if (ckEditor) { return false; }
-        if (!(window.XWiki.editor === 'inline' || window.XWiki.editor === 'object')) { return false; }
+        //if (!(window.XWiki.editor === 'inline' || window.XWiki.editor === 'object')) { return false; } // FIXME
+        if (window.XWiki.editor !== 'inline') { return false; }
         // Disallow RTForm in AWM wizard (editor inline)
         var wizardHeader = document.getElementsByClassName('wizard-header');
         return (wizardHeader.length === 0);
