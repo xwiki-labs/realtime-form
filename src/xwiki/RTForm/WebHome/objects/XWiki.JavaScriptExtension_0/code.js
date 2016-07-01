@@ -7,6 +7,11 @@ var path = "$xwiki.getURL('RTFrontend.LoadEditors','jsx')" + '?minify=false&demo
 var pathErrorBox = "$xwiki.getURL('RTFrontend.ErrorBox','jsx')" + '?';
 require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
     if(!Loader) { return; }
+
+    // Do not start RTForm is there is already an active RTForm/Rtwiki/Rtwysiwyg in that page
+    // This is a fix to the object editor issue which duplicates the RTForm elements when an object is added
+    if ($('.rt-toolbar').length) { return; }
+
     // VELOCITY
     #set ($document = $xwiki.getDocument('RTForm.WebHome'))
     var PATHS = {
@@ -40,8 +45,7 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
     var lock = Loader.getDocLock();
     var formLock = !getWysiwygLock() && getFormLock();
 
-    //var editor = 'object'; //FIXME object editor disabled because of a wrong behavior when an object is added
-    var editor = 'inline';
+    var editor = 'object';
     var href = document.location.href;
     var params = href.substr(href.indexOf('?')+1);
     var ckEditor = false;
@@ -53,8 +57,7 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
 
     var isRTForm = function() {
         if (ckEditor) { return false; }
-        //if (!(window.XWiki.editor === 'inline' || window.XWiki.editor === 'object')) { return false; } // FIXME
-        if (window.XWiki.editor !== 'inline') { return false; }
+        if (!(window.XWiki.editor === 'inline' || window.XWiki.editor === 'object')) { return false; }
         // Disallow RTForm in AWM wizard (editor inline)
         var wizardHeader = document.getElementsByClassName('wizard-header');
         return (wizardHeader.length === 0);
@@ -194,8 +197,8 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
             var br =  new Element('br');
             button.insert(Loader.messages.redirectDialog_join.replace(/\{0\}/g, "Form (object)"));
             button2.insert(Loader.messages.redirectDialog_join.replace(/\{0\}/g, "Form (inline)"));
-            //$('.realtime-button-rtform').prepend(button); // FIXME
-            //$('.realtime-button-rtform').prepend(br);
+            $('.realtime-button-rtform').prepend(button);
+            $('.realtime-button-rtform').prepend(br);
             $('.realtime-button-rtform').prepend(button2);
             $('.realtime-button-rtform').prepend(br);
             $(button).on('click', function() {
@@ -217,8 +220,8 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
 
             $('.realtime-buttons').append(br);
             $('.realtime-buttons').append(button2);
-            //$('.realtime-buttons').append(br); // FIXME
-            //$('.realtime-buttons').append(button);
+            $('.realtime-buttons').append(br);
+            $('.realtime-buttons').append(button);
 
             $(button).on('click', function() {
                 info.href = '&force=1&editor=object';
