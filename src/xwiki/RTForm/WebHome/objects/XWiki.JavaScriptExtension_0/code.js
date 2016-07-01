@@ -194,8 +194,8 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
             var br =  new Element('br');
             button.insert(Loader.messages.redirectDialog_join.replace(/\{0\}/g, "Form (object)"));
             button2.insert(Loader.messages.redirectDialog_join.replace(/\{0\}/g, "Form (inline)"));
-            $('.realtime-button-rtform').prepend(button);
-            $('.realtime-button-rtform').prepend(br);
+            //$('.realtime-button-rtform').prepend(button); // FIXME
+            //$('.realtime-button-rtform').prepend(br);
             $('.realtime-button-rtform').prepend(button2);
             $('.realtime-button-rtform').prepend(br);
             $(button).on('click', function() {
@@ -217,8 +217,8 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
 
             $('.realtime-buttons').append(br);
             $('.realtime-buttons').append(button2);
-            $('.realtime-buttons').append(br);
-            $('.realtime-buttons').append(button);
+            //$('.realtime-buttons').append(br); // FIXME
+            //$('.realtime-buttons').append(button);
 
             $(button).on('click', function() {
                 info.href = '&force=1&editor=object';
