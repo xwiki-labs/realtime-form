@@ -199,8 +199,7 @@ define([
                 res = !elements.some(function(e) {
                     return !el.contains(e);
                 });
-                if (!res) { console.log(el); el = el.parentElement; }
-                console.log(el); console.log(res); console.log(el.contains);
+                if (!res) { el = el.parentElement; }
             }
             return el;
         };

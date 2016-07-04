@@ -13,7 +13,8 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
     if ($('.rt-toolbar').length) { return; }
 
     // VELOCITY
-    #set ($document = $xwiki.getDocument('RTForm.WebHome'))
+    #set ($webhomeRef = $services.model.resolveDocument('RTForm.WebHome'))
+    #set ($document = $xwiki.getDocument($webhomeRef))
     var PATHS = {
         RTForm_WebHome_realtime_netflux: "$document.getAttachmentURL('realtime-form.js')",
         RTForm_WebHome_realtime_formula: "$document.getAttachmentURL('ula.js')",
@@ -66,13 +67,30 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
     // Check if RTForm is allowed globally in the admin UI or only allowed for specific classes.
     // It is also possible that a sheet requests that RTForm is enabled for the related class.
     var isRtFormAllowed = function() {
-        var allowedGlobally = ("$!document.getObject("RTForm.ConfigurationClass").getProperty("enableGlobally").value" === "1");
+        ## Get the configuration from the subwiki if it is set up. Get it from the main wiki if not.
+        #set ($globally = $!document.getObject("RTForm.ConfigurationClass").getProperty("enableGlobally").value)
+        #set ($enabledClasses = $document.getObject("RTForm.ConfigurationClass").getProperty("enabledClasses").value)
+        #if ("$!globally" == "")
+          #set ($mainWikiRef = $services.model.createDocumentReference($xcontext.getMainWikiName(), 'RTForm', 'WebHome'))
+          #set ($document = $xwiki.getDocument($mainWikiRef))
+          ## If not configured locally, get the global configuration. If not configured globally, consider enabled globally
+          #if (!$document.isNew())
+            #set ($globally = $!document.getObject("RTForm.ConfigurationClass").getProperty("enableGlobally").value)
+            #if ("$!globally" == "")
+              #set ($globally = "1")
+            #end
+            #set ($enabledClasses = $document.getObject("RTForm.ConfigurationClass").getProperty("enabledClasses").value)
+          #end
+        #end
+
+        var allowedGlobally = ("$!globally" === "1");
         var allowedBySheet = ("$!request.getParameter('enableRtForm')" === "1");
         if (allowedGlobally || allowedBySheet) { return true; }
 
         var allowedClasses = [];
-        #set ($enabledClasses = $document.getObject("RTForm.ConfigurationClass").getProperty("enabledClasses").value)
-        #foreach ($className in $enabledClasses) allowedClasses.push('$escapetool.javascript($className)'); #end
+        #foreach ($className in $enabledClasses)
+        allowedClasses.push('$escapetool.javascript($className)');
+        #end
 
         var objectsInThePage = JSON.parse($('#realtime-form-getobjects').html());
         var allowed = false;
@@ -82,6 +100,7 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
                 return;
             }
         });
+
         return allowed;
     };
 

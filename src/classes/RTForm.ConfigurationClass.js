@@ -9,10 +9,10 @@ XClass(function (xcl, XWiki) {
   xcl.setValidationScript("");
   xcl.addProp("enableGlobally", props.XBoolean.create({
     "customDisplay": "",
-    "defaultValue": "1",
-    "displayFormType": "radio",
+    "defaultValue": "",
+    "displayFormType": "select",
     "displayType": "",
-    "prettyName": "Enable RTForm for all classes of the wiki",
+    "prettyName": "Enable RTForm for all classes of the wiki (If not changed, configuration from the main wiki will be used)",
     "validationMessage": "",
     "validationRegExp": ""
   }));
