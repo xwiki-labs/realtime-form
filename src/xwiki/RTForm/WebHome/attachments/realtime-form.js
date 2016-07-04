@@ -181,6 +181,35 @@ define([
         };
         $elements.each(addElement);
 
+        // Stop RTForm if there is no RT element
+        if (!UI.ids.length) { return; }
+
+
+        // If the contentInner is not defined ($('.xform') does not exist?), replace it by the common parent of
+        // the realtimes elements
+        var allElements = [];
+        UI.each(function (el) {
+            if (el.$.is(':hidden')) { return; }
+            allElements.push(el.element);
+        });
+        var commonContainer = function (elements) {
+            var el = elements[0].parentElement;
+            var res = false;
+            while (!res && el && el.contains) {
+                res = !elements.some(function(e) {
+                    return !el.contains(e);
+                });
+                if (!res) { console.log(el); el = el.parentElement; }
+                console.log(el); console.log(res); console.log(el.contains);
+            }
+            return el;
+        };
+        if (!$contentInner.length) {
+            $contentInner = $(commonContainer(allElements));
+            if (!$contentInner.length) { $contentInner = $('#mainContentArea'); }
+            if (!$contentInner.length) { return;} // No content inner to display the toolbar: abort
+        }
+
         // Check if a value is in the Map associated with the given property
         // 1/ Filter the Map to get only the values of our property. We want only the keys of the Map which are "{propertyName}-{Integer}".
         // 2/ Use Array.some to check if the value of our $input is in the filtered Map
