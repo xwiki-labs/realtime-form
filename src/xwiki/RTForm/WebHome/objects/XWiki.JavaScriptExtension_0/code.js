@@ -2,7 +2,7 @@
 var DEMO_MODE = "$!request.getParameter('demoMode')" || false;
 DEMO_MODE = (DEMO_MODE === true || DEMO_MODE === "true") ? true : false;
 // Not in edit mode?
-if (!DEMO_MODE && window.XWiki.contextaction !== 'edit' && 1==2) { return false; }
+if (!DEMO_MODE && window.XWiki.contextaction !== 'edit') { return false; }
 var path = "$xwiki.getURL('RTFrontend.LoadEditors','jsx')" + '?minify=false&demoMode='+DEMO_MODE;
 var pathErrorBox = "$xwiki.getURL('RTFrontend.ErrorBox','jsx')" + '?';
 require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
@@ -177,7 +177,8 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
     if (lock) {
         // found a lock link : check active sessions
         Loader.checkSessions(info);
-    } else if ((isRTForm() && isRtFormAllowed()) || DEMO_MODE) {
+    } else if ( ((isRTForm() && isRtFormAllowed()) || DEMO_MODE) && !window.rtform) {
+        window.rtform = true;
         var config = Loader.getConfig();
         if(config.language !== "default" && !DEMO_MODE) {
             console.log("Realtime Form is only available for the default language of the document!");
