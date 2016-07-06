@@ -331,7 +331,7 @@ define([
                 window.location.reload();
             } else {
                 Interface.realtimeAllowed(false);
-                module.abortRealtime();
+                module.onAbort();
             }
         };
         $disallowButton.on('change', disallowClick);
@@ -602,9 +602,12 @@ define([
                 createSaver(info);
             };
 
-            var onAbort = realtimeOptions.onAbort = function (info) {
+            var onAbort = module.onAbort = realtimeOptions.onAbort = function (info) {
                 console.log("Aborting the session!");
-                // TODO inform them that the session was torn down
+                module.realtime.abort();
+                module.leaveChannel();
+                $elements.removeClass('realtime-form-field');
+                Saver.stop();
                 toolbar.failed();
                 toolbar.toolbar.remove();
                 if (Interface.realtimeAllowed()) {
@@ -613,14 +616,6 @@ define([
             };
 
             var rti = module.realtimeInput = realtimeInput.start(realtimeOptions);
-
-            module.abortRealtime = function () {
-                module.realtime.abort();
-                module.leaveChannel();
-                $elements.removeClass('realtime-form-field');
-                Saver.stop();
-                onAbort();
-            };
 
             var changeEventListener = module.changeEventListener = function (ui, i, list) {
                 var type = ui.type;
