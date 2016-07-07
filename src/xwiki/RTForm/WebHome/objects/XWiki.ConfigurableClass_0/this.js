@@ -1,6 +1,6 @@
 XWikiObj(function (obj) {
     obj.setCategoryIcon("");
-    obj.setCodeToExecute("");
+    obj.setCodeToExecute("[[How to configure Realtime Form ?>>http://extensions.xwiki.org/xwiki/bin/view/Extension/RtForm/#HConfiguration]]");
     obj.setConfigurationClass("RTForm.ConfigurationClass");
     obj.setConfigureGlobally("1");
     obj.setDisplayBeforeCategory("");
