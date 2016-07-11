@@ -537,7 +537,8 @@ define([
                       userName: userName,
                       network: info.network,
                       channel: eventsChannel,
-                      demoMode: DEMO_MODE
+                      demoMode: DEMO_MODE,
+                      safeCrash: function(reason) { module.onAbort(null, reason); }
                     }
                     Saver.create(saverCreateConfig);
                 }
@@ -602,7 +603,8 @@ define([
                 createSaver(info);
             };
 
-            var onAbort = module.onAbort = realtimeOptions.onAbort = function (info) {
+            var onAbort = module.onAbort = realtimeOptions.onAbort = function (info, reason) {
+                msg = reason || 'disconnected';
                 console.log("Aborting the session!");
                 module.realtime.abort();
                 module.leaveChannel();
@@ -611,7 +613,7 @@ define([
                 toolbar.failed();
                 toolbar.toolbar.remove();
                 if (Interface.realtimeAllowed()) {
-                    ErrorBox.show('disconnected');
+                    ErrorBox.show(msg);
                 }
             };
 
