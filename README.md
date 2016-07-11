@@ -4,7 +4,7 @@
 
 This editor makes use of the [ChainPad][chainpad] realtime editor engine and binds
 to the XWiki inline form and object editors. You can install it from the XWiki Extension Manager
-or build it manually using [node-xwikimodel][] to construct the .xar file.
+or build it manually using [xwiki-tools][] to construct the .xar file.
 install the [XWiki Realtime Backend][rtbackend] and [XWiki Realtime Frontend][rtfrontend] from the Extension Manager and build
 the .xar file as follows:
 
@@ -28,4 +28,4 @@ Or generate a Maven compatible build using:
 [chainpad]: https://github.com/xwiki-contrib/chainpad
 [rtbackend]: http://extensions.xwiki.org/xwiki/bin/view/Extension/Realtime+Netflux+Backend/
 [rtfrontend]: http://extensions.xwiki.org/xwiki/bin/view/Extension/Realtime+Netflux+Frontend/
-[node-xwikimodel]: https://github.com/xwiki-contrib/node-xwikimodel
+[xwiki-tools]: https://github.com/xwiki-contrib/xwiki-tools-node
