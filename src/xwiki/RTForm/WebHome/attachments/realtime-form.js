@@ -3,35 +3,25 @@ define([
     'RTFrontend_toolbar',
     'RTFrontend_realtime_input',
     'RTFrontend_json_ot',
+    'RTFrontend_userdata',
     'json.sortify',
     'RTFrontend_text_patcher',
     'RTFrontend_interface',
     'RTFrontend_saver',
     'RTFrontend_chainpad',
     'RTForm_WebHome_realtime_formula',
-    'RTFrontend_diffDOM',
+    'RTFrontend_crypto',
     'jquery'
-], function (ErrorBox, Toolbar, realtimeInput, JsonOT, JSONSortify, TextPatcher, Interface, Saver, Chainpad, Formula) {
+], function (ErrorBox, Toolbar, realtimeInput, JsonOT, UserData, JSONSortify, TextPatcher, Interface, Saver, Chainpad, Formula, Crypto) {
     var $ = window.jQuery;
     var DiffDom = window.diffDOM;
 
     /* REALTIME_DEBUG exposes a 'version' attribute.
         this must be updated with every release */
     var REALTIME_DEBUG = window.REALTIME_DEBUG = {
-        version: '1.2.1',
+        version: '1.6',
         local: {},
         remote: {}
-    };
-
-    // Create a fake "Crypto" object which will be passed to realtime-input
-    var Crypto = {
-        encrypt : function(msg, key) { return msg; },
-        decrypt : function(msg, key) { return msg; },
-        parseKey : function(key) { return {cryptKey : ''}; }
-    }
-
-    var stringify = function (obj) {
-        return JSONSortify(obj);
     };
 
     var canonicalize = function(text) { if(typeof text !== "string") {return;} return text.replace(/\r\n/g, '\n'); };
@@ -91,6 +81,7 @@ define([
         var userName = editorConfig.userName;
         var DEMO_MODE = editorConfig.DEMO_MODE;
         var language = editorConfig.language;
+        var userAvatar = editorConfig.userAvatarURL;
         var saverConfig = editorConfig.saverConfig || {};
         saverConfig.chainpad = Chainpad;
         saverConfig.editorType = 'rtform';
@@ -104,6 +95,7 @@ define([
 
         var channel = docKeys.rtform;
         var eventsChannel = docKeys.events;
+        var userdataChannel = docKeys.userdata;
 
         var inline = false;
         // Set the inner to get the realtimed fields
@@ -226,7 +218,7 @@ define([
         }
 
         // Register the auto-suggest elements added to the page
-        $(document).on('DOMNodeInserted' , function(e) {
+        $(document).on('DOMNodeInserted', function(e) {
             var $target = $(e.target);
             if ($target.is('li') && $target.find('input[type="hidden"]').length) {
                 var $input = $target.find('input[type="hidden"]');
@@ -247,8 +239,6 @@ define([
                     var id = name+'-'+index;
                     $input.attr('id', id);
                 }
-
-                //if (UI[id]) { $target.remove(); return; } WTF??
 
                 // Add the element in the UI object
                 addElement(null, $input);
@@ -362,33 +352,13 @@ define([
             setEditable(false);
 
             var initializing = true;
-            var userList = {}; // List of pretty name of all users (mapped with their server ID)
-            var toolbarList; // List of users still connected to the channel (server IDs)
-            var addToUserList = function(data) {
-                for (var attrname in data) { userList[attrname] = data[attrname]; }
-                if(toolbarList && typeof toolbarList.onChange === "function") {
-                    toolbarList.onChange(userList);
-                }
-            };
 
-            var myData = {};
-            var myUserName = ''; // My "pretty name"
-            var myID; // My server ID
-
-            var setMyID = function(info) {
-              myID = info.myID || null;
-              myUserName = myID;
-              myData[myID] = {
-                name: userName
-              };
-              addToUserList(myData);
-            };
+            var userData; // List of pretty name of all users (mapped with their server ID)
+            var userList; // List of users still connected to the channel (server IDs)
+            var myId; // My server Id
 
             var stringifyMap = function(map) {
-              return stringify({
-                content: map,
-                metadata: userList
-              });
+                return JSONSortify(map);
             }
 
             var realtimeOptions = {
@@ -404,24 +374,11 @@ define([
                 // the channel we will communicate over
                 channel: channel,
 
-                // method which allows us to get the id of the user
-                setMyID: setMyID,
-
                 // Crypto object to avoid loading it twice in Cryptpad
                 crypto: Crypto,
 
                 // really basic operational transform
                 transformFunction : JsonOT.validate
-            };
-            var updateUserList = function(shjson) {
-                // Extract the user list (metadata) from the hyperjson
-                var hjson = (shjson === "") ? {} : JSON.parse(shjson);
-                if(hjson && hjson.metadata) {
-                  var userData = hjson.metadata;
-                  // Update the local user data
-                  addToUserList(userData);
-                }
-                return hjson;
             };
 
             // Form read/update
@@ -433,9 +390,8 @@ define([
             var preventLocal = false;
             var updateValues = function (firstLoad) {
                 var userDoc = module.realtime.getUserDoc();
-                var parsed = JSON.parse(userDoc);
+                var content = JSON.parse(userDoc);
 
-                var content = parsed.content || {};
                 preventLocal = true;
 
                 // Remove all the autosuggest values and replace them with the remote ones if they exist if the remote document
@@ -521,7 +477,7 @@ define([
                     Saver.lastSaved.mergeMessage = Interface.createMergeMessageElement(toolbar.toolbar
                         .find('.rt-toolbar-rightside'),
                         saverConfig.messages);
-                    Saver.setLastSavedContent(JSON.stringify(Map));
+                    Saver.setLastSavedContent(stringifyMap(Map));
                     var saverCreateConfig = {
                       formId: formId, // Id of the wiki page form
                       // setTextValue is nerver used when the merge is disabled
@@ -530,7 +486,7 @@ define([
                           return $('#'+formId).serialize();
                       },
                       getTextValue: function() {
-                          return JSON.stringify(Map);
+                          return stringifyMap(Map);
                       },
                       realtime: info.realtime,
                       userList: info.userList,
@@ -547,9 +503,6 @@ define([
             var onRemote = realtimeOptions.onRemote = function (info) {
                 if (initializing) { return; }
 
-                var sjson = info.realtime.getUserDoc();
-                updateUserList(sjson);
-
                 /* integrate remote changes */
                 if (stringifyMap(Map) !== module.realtime.getUserDoc()) {
                     updateValues();
@@ -560,10 +513,9 @@ define([
                 var realtime = module.realtime = info.realtime;
                 // Create the toolbar
                 var $bar = $contentInner;
-                toolbarList = info.userList;
+                userList = info.userList;
                 var config = {
-                    userData: userList
-                    // changeNameID: 'cryptpad-changeName'
+                    userData: userData
                 };
                 toolbar = Toolbar.create($bar, info.myID, info.realtime, info.getLag, info.userList, config, toolbar_style);
                 $(toolbar.toolbar).addClass('breadcrumb');
@@ -590,8 +542,19 @@ define([
                     logging: false,
                 });
 
-                var userDoc = module.realtime.getUserDoc();
-                updateUserList(userDoc);
+                myId = info.myId;
+
+                var userdataConfig = {
+                    myId : myId,
+                    userName : userName,
+                    userAvatar : userAvatar,
+                    onChange : userList.onChange,
+                    crypto : Crypto,
+                    transformFunction : JsonOT.validate,
+                    editor : 'rtform'
+                };
+
+                userData = UserData.start(info.network, userdataChannel, userdataConfig);
 
                 updateValues(true);
 
