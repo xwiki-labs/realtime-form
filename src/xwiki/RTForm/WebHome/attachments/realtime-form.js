@@ -97,6 +97,26 @@ define([
         var eventsChannel = docKeys.events;
         var userdataChannel = docKeys.userdata;
 
+        /** Update the channels keys for reconnecting websocket */
+        var updateKeys = function (cb) {
+            docKeys._update(function (keys) {
+                var changes = [];
+                if (keys.rtform && keys.rtform !== channel) {
+                    channel = keys.rtform;
+                    changes.push('rtform');
+                }
+                if (keys.events && keys.events !== eventsChannel) {
+                    eventsChannel = keys.events;
+                    changes.push('events');
+                }
+                if (keys.userdata && keys.userdata !== userdataChannel) {
+                    userdataChannel = keys.userdata;
+                    changes.push('userdata');
+                }
+                cb(changes);
+            });
+        };
+
         var inline = false;
         // Set the inner to get the realtimed fields
         var $contentInner = $('#xwikiobjects'); // Object editor
@@ -578,6 +598,25 @@ define([
                 if (Interface.realtimeAllowed()) {
                     ErrorBox.show(msg);
                 }
+            };
+
+            var onConnectionChange = realtimeOptions.onConnectionChange = function (info) {
+                console.log("Connection status : "+info.state);
+                toolbar.failed();
+                if (info.state) {
+                    ErrorBox.hide();
+                    initializing = true;
+                    toolbar.reconnecting(info.myId);
+                } else {
+                    setEditable(false);
+                    ErrorBox.show('disconnected');
+                }
+            };
+
+            var beforeReconnecting = realtimeOptions.beforeReconnecting = function (callback) {
+                updateKeys(function () {
+                    callback(channel, '{}');
+                });
             };
 
             var rti = module.realtimeInput = realtimeInput.start(realtimeOptions);

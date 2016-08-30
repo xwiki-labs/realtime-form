@@ -24,16 +24,6 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
     for (var path in PATHS) { PATHS[path] = PATHS[path].replace(/\.js$/, ''); }
     require.config({paths:PATHS});
 
-    var launchRealtime = function (config, keys) {
-        require(['RTForm_WebHome_realtime_netflux'], function (RTForm) {
-            if (RTForm && RTForm.main) {
-                RTForm.main(config, keys);
-            } else {
-                console.error("Couldn't find RTForm.main, aborting");
-            }
-        });
-    };
-
     var getWysiwygLock = function () {
         var force = document.querySelectorAll('a[href*="editor=inline"][href*="sheet=CKEditor.EditSheet"][href*="/edit/"]');
         return force.length? force[0] : false;
@@ -146,6 +136,15 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
         return keys;
     };
 
+    var updateKeys = function (cb) {
+        var config = Loader.getConfig();
+        var keysData = getKeyData(config);
+        Loader.getKeys(keysData, function(keysResultDoc) {
+            var keys = parseKeyData(config, keysResultDoc);
+            cb(keys);
+        });
+    };
+
     var displayTranslatedPageModal = function() {
         var behave = {
             onYes: function () {
@@ -176,6 +175,17 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
         new XWiki.widgets.ConfirmationBox(behave, param);
     };
 
+    var launchRealtime = function (config, keys) {
+        require(['RTForm_WebHome_realtime_netflux'], function (RTForm) {
+            if (RTForm && RTForm.main) {
+                keys._update = updateKeys;
+                RTForm.main(config, keys);
+            } else {
+                console.error("Couldn't find RTForm.main, aborting");
+            }
+        });
+    };
+
     if (lock) {
         // found a lock link : check active sessions
         Loader.checkSessions(info);
@@ -187,10 +197,7 @@ require([path, pathErrorBox, 'jquery'], function(Loader, ErrorBox, $) {
             displayTranslatedPageModal();
             return;
         }
-        var keysData = getKeyData(config);
-        // No lock and we are using wiki editor : start realtime
-        Loader.getKeys(keysData, function(keysResultDoc) {
-            var keys = parseKeyData(config, keysResultDoc);
+        updateKeys(function (keys) {
             if(!keys.rtform || !keys.events) {
                 ErrorBox.show('unavailable');
                 console.error("You are not allowed to create a new realtime session for that document.");
