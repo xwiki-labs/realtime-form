@@ -530,7 +530,6 @@ define([
             };
 
             var onInit = realtimeOptions.onInit = function (info) {
-                var realtime = module.realtime = info.realtime;
                 // Create the toolbar
                 var $bar = $contentInner;
                 userList = info.userList;
@@ -556,6 +555,7 @@ define([
             };
 
             var onReady = realtimeOptions.onReady = function (info) {
+                var realtime = module.realtime = info.realtime;
                 module.leaveChannel = info.leave;
                 module.patchText = TextPatcher.create({
                     realtime: info.realtime,
